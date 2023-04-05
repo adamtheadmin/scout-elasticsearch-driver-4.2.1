@@ -354,4 +354,40 @@ class ElasticEngine extends Engine
             ->orderBy($model->getScoutKeyName())
             ->unsearchable();
     }
+
+    public function lazyMap(Builder $builder, $results, $model)
+    {
+        return new LazyCollection(function () use ($builder, $results, $model) {
+            $keys = $this->mapIds($results);
+
+            foreach ($keys as $key) {
+                yield $model->newQuery()->find($key);
+            }
+        });
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function deleteIndex($name)
+    {
+        $params = ['index' => $name];
+
+        ElasticClient::indices()
+            ->delete($params);
+    }
+
+    public function createIndex($name, array $options = [])
+    {
+        $client = ClientBuilder::create()->build();
+
+        $params = [
+            'index' => $name,
+            'body' => $options,
+        ];
+
+        $response = $client->indices()->create($params);
+
+        return $response;
+    }
 }
